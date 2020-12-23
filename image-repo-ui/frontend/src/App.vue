@@ -1,12 +1,15 @@
 <template>
   <div id="app">
   <router-view></router-view>
+  <Home/>
   </div>
 </template>
 
 <script>
+import Home from './components/Home.vue'
 
 export default {
+  components: { Home },
   name: 'App',  
   created() {
     document.addEventListener('beforeunload', this.handler)

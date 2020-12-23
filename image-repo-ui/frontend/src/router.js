@@ -10,6 +10,14 @@ export default new Router({
   base: __dirname,
   routes: [
     {
+      path: '/',
+      redirect: '/home'
+    },
+    {
+      path: '',
+      redirect: '/home'
+    },
+    {
       path: '/images',
       name: 'images',
       component: () => import("./components/PublicImages.vue")
