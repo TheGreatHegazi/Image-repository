@@ -1,6 +1,6 @@
 # Welcome to my Shopify challenge
 
-In order to start using my image repository please run the following command. ( make sure you have docker and docker compose up to date and have docker already started.)
+In order to start using my image repository please run the following command in the image-repository folder. ( make sure you have docker and docker compose up to date and have docker already started.)
 
 ` ./init1.sh `
 
