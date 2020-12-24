@@ -81,6 +81,7 @@ export default {
          if(result.status == 200){
            this.success = true
            this.failure = false
+           this.$router.replace({path: '/home'}).catch(()=> {})
          }
         }).catch( (err) => {
            this.error = "Username already taken"
