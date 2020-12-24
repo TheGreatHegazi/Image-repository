@@ -3,7 +3,7 @@ version: '3.1'
 services:
 
   backend:
-    image: imgfastapi
+    image: image-repo-backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 80
     container_name: backend
     build:
@@ -13,7 +13,7 @@ services:
     - "80:80"
 
   frontend:
-    image: imgrepui
+    image: image-repo-ui
     restart: always
     command: npm run serve
     container_name: frontend
