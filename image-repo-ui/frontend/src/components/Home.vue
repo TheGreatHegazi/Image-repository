@@ -9,7 +9,7 @@
     <a class="btn btn-primary btn-lg" @click="$router.replace({path: '/signup'})" role="button">Sign Up</a>
   </div>
 
-  <b-modal v-model="loginModal" @ok="Login()" title="Login" :centered="true" >
+  <b-modal v-model="loginModal" @ok="Login()" title="Login" :centered="true" id="loginmodal" >
       <b-form-group id="input-group-2" label="Username:" label-for="input-2">
         <b-form-input
           id="input-2"
@@ -68,12 +68,12 @@ export default {
           this.$store.dispatch("setToken", result.data.token)
           this.$store.dispatch("setIsLoggedIn", true)
           this.$store.dispatch("setUser", this.form.username)
-
          }
         }).catch( (err) => {
            this.error = "Username and password do not match "
            this.success = false
            this.failure = true
+           this.loginModal = true
            return err
         });
         

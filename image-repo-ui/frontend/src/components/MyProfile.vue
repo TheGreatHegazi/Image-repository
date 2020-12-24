@@ -34,6 +34,9 @@
         placeholder="Choose a file or drop it here..."
         drop-placeholder="Drop file here..."
       ></b-form-file>
+      <div class="alert alert-danger" role="alert" v-if="failure" style="margin-top: 20px;">
+        {{error}}
+      </div>
       </b-modal>
     </div>
 
@@ -55,7 +58,9 @@ export default {
       showModal: false,
       addModal: false,
       imgs: [],
-      busy: false
+      busy: false,
+      error: null,
+      failure: false
     }
   },
   name: 'MyProfile',
@@ -88,6 +93,13 @@ export default {
     }, 
     async addImg() {
       this.busy = true
+      if(this.imgs.length == 0){
+        this.error = "No files have been selected."
+        this.failure = true
+        this.addModal = true
+        this.busy = false
+        return
+      }
       var formdata = new FormData();
       this.imgs.map(i => formdata.append('images', i))
       await axios.post('http://127.0.0.1:80/user/'+ this.$store.state.user +'/images/bulk',
@@ -100,8 +112,12 @@ export default {
       ).then(function () {
         console.log('SUCCESS!!');
       })
-      .catch(function () {
-        console.log('FAILURE!!');
+      .catch((err) => {
+        this.error = "Unsupported format used. please use .jpg .png .bmp only"
+        this.failure = true
+        this.addModal = true
+        this.busy = false
+        console.log(err)
       });
       await this.refreshImages();
       this.busy = false

@@ -25,8 +25,8 @@
      </b-card>
     </div>
       <b-modal v-model="showModal" scrollable centered ok-only size="xl" >
-        <img :src="fullimg"/>
         <b-container fluid> 
+        <img :src="fullimg"/>
         </b-container>
       </b-modal>
       <b-modal v-model="addModal" @ok="addImg()" title="Add Image" centered size="lg"  >
@@ -36,7 +36,9 @@
         placeholder="Choose a file or drop it here..."
         drop-placeholder="Drop file here..."
       ></b-form-file>
-      
+      <div class="alert alert-danger" role="alert" v-if="failure" style="margin-top: 20px;">
+        {{error}}
+      </div>
       </b-modal>
     </div>
 
@@ -58,7 +60,10 @@ export default {
       showModal: false,
       addModal: false,
       imgs: [],
-      busy: false
+      busy: false,
+      error: null,
+      failure: false
+
     }
   },
   name: 'PublicImages',
@@ -87,7 +92,15 @@ export default {
       this.addModal = true
     }, 
     async addImg() {
-      this.busy = true
+
+      this.busy = true      
+      if(this.imgs.length == 0){
+        this.error = "No files have been selected."
+        this.failure = true
+        this.addModal = true
+        this.busy = false
+        return
+      }
       var formdata = new FormData();
       this.imgs.map(i => formdata.append('images', i))
       await axios.post('http://127.0.0.1:80/images/public/bulk',
@@ -99,8 +112,12 @@ export default {
       ).then(function () {
         console.log('SUCCESS!!');
       })
-      .catch(function () {
-        console.log('FAILURE!!');
+      .catch((err) => {
+        this.error = "Unsupported format used. please use .jpg .png .bmp only"
+        this.failure = true
+        this.addModal = true
+        this.busy = false
+        console.log(err)
       });
       await this.refreshImages();
       this.busy = false
