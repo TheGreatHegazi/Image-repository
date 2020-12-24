@@ -1,3 +1,4 @@
 .vscode
 *.png
 *.jpg
+image-repo-ui/frontend/node_modules
