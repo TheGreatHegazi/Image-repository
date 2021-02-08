@@ -77,8 +77,8 @@ export default {
   },
   methods: {
     async refreshImages(){
-      await axios.get('http://127.0.0.1:80/user/'+ this.$store.state.user +'/images',{headers: {'token': this.$store.state.token}}).then((result) => {
-        this.images =  result.data.imgNames.map(n => 'http://127.0.0.1:80/user/'+ this.$store.state.user +'/images/'+n);
+      await axios.get('http://127.0.0.1:1919/user/'+ this.$store.state.user +'/images',{headers: {'token': this.$store.state.token}}).then((result) => {
+        this.images =  result.data.imgNames.map(n => 'http://127.0.0.1:1919/user/'+ this.$store.state.user +'/images/'+n);
       }).catch((err) => {
         console.log(err)
       });
@@ -102,7 +102,7 @@ export default {
       }
       var formdata = new FormData();
       this.imgs.map(i => formdata.append('images', i))
-      await axios.post('http://127.0.0.1:80/user/'+ this.$store.state.user +'/images/bulk',
+      await axios.post('http://127.0.0.1:1919/user/'+ this.$store.state.user +'/images/bulk',
         formdata, {
           headers: {
             'Content-Type': 'multipart/form-data', 

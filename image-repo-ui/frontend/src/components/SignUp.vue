@@ -73,9 +73,10 @@ export default {
   methods: {
     async onSubmit(){
       var body = {username: this.form.username, password: this.form.password, email: this.form.email}
-      await axios.post('http://127.0.0.1:80/signup', body, {
+      await axios.post('http://127.0.0.1:1919/signup', body, {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
           }
         }).then((result) => {
          if(result.status == 200){

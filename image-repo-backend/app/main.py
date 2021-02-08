@@ -7,18 +7,15 @@ import re
 import os
 from pydantic import BaseModel
 import base64
+from sqlalchemy.orm import Session
 
+from .db import ops, models, schema
+from .db.database import SessionLocal, engine
 
+models.Base.metadata.create_all(bind=engine)
+anon = ops.create_user(SessionLocal(), schema.UserCreate(email="anon@anon.com", username="anonymous", password="password123"))
+print (anon)
 REGEX_EMAIL = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w+$'
-
-class User(BaseModel):
-    username: str
-    email: str
-    password: str
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
 
 app = FastAPI()
 APP_ROOT = '/app'
@@ -26,7 +23,6 @@ public = os.path.join(APP_ROOT, 'publicimages/')
 users = os.path.join(APP_ROOT, 'users/')
 os.mkdir(public)
 os.mkdir(users)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,65 +32,64 @@ app.add_middleware(
 )
 
 
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+@app.get("/try")
+def thisworks():
+    return {'hello': ops.get_user_by_username(SessionLocal(), "ahmedadel2")}
+
+
 @app.post("/login")
-def login(user: UserLogin):
+def login(user: schema.UserLogin):
     if  user.username == None or user.username == '':
         raise HTTPException(status_code=400, detail="username cannot be empty")
     if  user.password == None or user.password == '':
         raise HTTPException(status_code=400, detail="password cannot be empty")
-
-    target = os.path.join(APP_ROOT, 'users/'+user.username)
-    if(not os.path.isdir(target)):
-        raise HTTPException(status_code=400, detail="Username not found")
-    
-    f = open(target + '.txt', 'r')
-    m = f.readline()
-    f.close()
-
-    cred = decode(m.split("'")[1]).split("'")[1].split(';')
-    username = cred[0].split(',')[0]
-    email = cred [0].split(',')[1]
-    pwd = cred[1]
-    if user.username == username and user.password == pwd:
-        return {'token' : encode(username+','+email+';'+pwd) }
+    db_user = ops.get_user_by_username(SessionLocal(), user.username)
+    if(not db_user):
+        print("not found" )
+        raise HTTPException(status_code=400, detail="username and password do not match")
+    if user.username == db_user.username and encode(user.password) == "b'"+db_user.password+"'":
+        return {'token' : db_user.token}
     else:
         raise HTTPException(status_code=404, detail="Username and password do not match ")
 
 
 @app.post("/signup")
-def create_user(user: User):
+def create_user(user: schema.UserCreate):
     if  user.username == None or user.username == '':
         raise HTTPException(status_code=400, detail="username cannot be empty")
     
     if  user.password == None or user.password == '':
         raise HTTPException(status_code=400, detail="password cannot be empty")
-
-    target = os.path.join(APP_ROOT, 'users/'+user.username)
-    if(os.path.isdir(target)):
-        raise HTTPException(status_code=400, detail="Username already Exists")
-
+    if  user.email == None or user.email == '':
+        raise HTTPException(status_code=400, detail="email cannot be empty")
+    sname = ops.get_user_by_username(SessionLocal(), user.username)
+    if(sname):
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    db_user = ops.create_user(SessionLocal(), user)
+    if(not db_user):
+        raise HTTPException(status_code=400, detail="failed to create user")
+    target = os.path.join(users, db_user.username +"/")
     os.mkdir(target)
-    f = open(target + '.txt', 'w')
-    f.write(encode(user.username+','+user.email+';'+user.password))
-    f.close()
-    return {'msg': 'User Created!'}
+    return {'msg': 'User Created!' }
 
 
 @app.get("/user/{username}")
 def get_user(username: str, token: Optional[str]=Header(None)):
 
     if isAuth(username, token):
-        return {"msg": decode(token.split("'")[1]).split("'")[1].split(';')[0]}
+        return {"msg": ops.get_user_by_username(SessionLocal(),username)}
     else:
-        raise HTTPException(status_code=401, detail="UnAuthorized") 
+        raise HTTPException(status_code=401, detail=token) 
 
 
 @app.get("/images/public")
 def get_all_images_paths():
-    target = os.path.join(APP_ROOT, 'publicimages/')
+    target = public
     images = os.listdir(target)
     if images.count == 0:
         raise HTTPException(status_code=404, detail="No images saved")
@@ -104,9 +99,7 @@ def get_all_images_paths():
 def get_all_images_paths(username, token: Optional[str]=Header(None)):
     if not isAuth(username, token):
         raise HTTPException(status_code=401, detail="UnAuthorized") 
-
-    target = os.path.join(APP_ROOT, 'users/' + username)
-    
+    target = os.path.join(users, username + "/")
     images = os.listdir(target)
     if images.count == 0:
         raise HTTPException(status_code=404, detail="No images saved")
@@ -115,7 +108,7 @@ def get_all_images_paths(username, token: Optional[str]=Header(None)):
 
 @app.get("/images/{imgname}")
 def get_image(imgname):
-    target = os.path.join(APP_ROOT, 'publicimages/')
+    target = public
     images = os.listdir(target)
     if images.count == 0:
         raise HTTPException(status_code=404, detail="No images saved")
@@ -138,15 +131,18 @@ def get_image(username, imgname, token: Optional[str]=Header(None)):
 
 @app.post("/images/public")
 async def add_image(image: UploadFile = File(...)):
-    target = os.path.join(APP_ROOT, 'publicimages/')
+    target = public
     addImage(target, image)
+    ops.create_user_image(SessionLocal(), {name: image.filename, is_public: True}, anon.id)
     return {"response": "successfully added " + image.filename + " Publicly"}
 
 @app.post("/images/public/bulk")
 async def add_image(images: List[UploadFile] = File(...)):
-    target = os.path.join(APP_ROOT, 'publicimages/')
+
+    target = public
     for image in images:
         addImage(target, image)
+        imgs = ops.create_user_image(SessionLocal(), schema.ImageCreate(name=image.filename, is_public=True), anon.id)
     return {"response": "successfully added all images Publicly"}
 
 @app.post("/user/{username}/images/bulk")
@@ -154,8 +150,10 @@ async def add_image(username, images: List[UploadFile] = File(...), token: Optio
     if not isAuth(username, token):
         raise HTTPException(status_code=401, detail="UnAuthorized") 
     target = os.path.join(APP_ROOT, 'users/'+ username+'/')
+    db_user = ops.get_user_by_token(SessionLocal(), token)
     for image in images:
         addImage(target, image)
+        imgs = ops.create_user_image(SessionLocal(), schema.ImageCreate(name=image.filename, is_public=False), db_user.id)
     return {"response": "successfully added  all Images Privately"}
 
 
@@ -192,10 +190,8 @@ def addImage(target, image):
 def isAuth(username, token):
     if token == '' or token == None or username == None or username == '':
         return False
-    target = os.path.join(APP_ROOT, 'users/' + username)
-    f = open(target + '.txt', 'r')
-    m = f.readline()
-    f.close()
-    if token != m :
+    
+    db_user = ops.get_user_by_token(SessionLocal(), token)
+    if (not db_user and db_user.username != username):
         return False
     return True
