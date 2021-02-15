@@ -28,9 +28,10 @@ services:
       context: ./image-repo-backend/app
     restart: always
     ports: 
-    - "1919:1919"
+      - "1919:1919"
     networks:
       - img-repo-network
+
   frontend:
     image: image-repo-ui
     restart: always
@@ -44,7 +45,6 @@ services:
       - "backend" 
     networks:
       - img-repo-network
-
 
 networks:
   img-repo-network:

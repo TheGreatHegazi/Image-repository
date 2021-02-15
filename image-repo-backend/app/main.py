@@ -21,8 +21,11 @@ app = FastAPI()
 APP_ROOT = '/app'
 public = os.path.join(APP_ROOT, 'publicimages/')
 users = os.path.join(APP_ROOT, 'users/')
-os.mkdir(public)
-os.mkdir(users)
+dir = os.listdir(APP_ROOT)
+if ("publicimages" not in dir):
+    os.mkdir(public)
+if ("users" not in dir):
+    os.mkdir(users)
 
 app.add_middleware(
     CORSMiddleware,
