@@ -2,13 +2,13 @@
 
 In order to start using my image repository please run the following command in the image-repository folder. ( make sure you have docker and docker compose up to date and have docker already started.)
 
-` ./init1.sh `
+` ./Init1.sh `
 
 while the command runs let me explain a little how my project works. 
 
 the backend is in fastapi (python), while the frontend is in Vue.js 
 ## Backend
-firstly, the backend is somewhat like a zookeeper ensamble.  Once a user gets created the backend creates a file for the user and saves their encrypted credentials for authentication.  I decided to go with this implementation as I did not want the images to be hosted on another server.
+Once a user gets created the backend creates a file for the user and saves their encrypted credentials for authentication.  I decided to go with this implementation as I did not want the images to be hosted on another server.
 
 when the user requests to add an image an image is added to the file of the user (private) or to a public folder that can be seen by anyone (even anonymous i.e. no account).
 all uploaded images are stored on the disk storage of the server.
